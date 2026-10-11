@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>People Finder</title>
+<style>
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+:root{--bg:#080808;--surface:#141414;--border:#252525;--text:#f0f0f0;--muted:#666;--accent:#7c3aed;--tiktok:#fe2c55;--ig:#e1306c;--tw:#1d9bf0;--yt:#ff0000;--fb:#1877f2}
+body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,sans-serif;min-height:100vh;padding:28px 14px;display:flex;justify-content:center}
+.wrap{width:100%;max-width:720px}
+.header{text-align:center;margin-bottom:30px}
+.logo{font-size:46px}
+h1{font-size:1.9rem;font-weight:800;margin:8px 0 4px}
+.sub{color:var(--muted);font-size:.88rem}
+.search-box{display:flex;gap:8px;margin-bottom:16px}
+input{flex:1;padding:14px 18px;border-radius:13px;border:1.5px solid var(--border);background:var(--surface);color:var(--text);font-size:1rem;outline:none;transition:border .2s}
+input:focus{border-color:var(--accent)}
+.btn-buscar{padding:14px 22px;background:var(--accent);color:#fff;border:none;border-radius:13px;font-size:1rem;font-weight:700;cursor:pointer;white-space:nowrap}
+.chips{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:24px}
+.chip{padding:7px 14px;background:var(--surface);border:1.5px solid var(--border);border-radius:50px;color:var(--muted);font-size:.8rem;font-weight:600;cursor:pointer;transition:all .2s;user-select:none}
+.chip.on{border-color:var(--accent);color:var(--text)}
+.loader{display:none;text-align:center;padding:40px 0;color:var(--muted)}
+.spinner{width:36px;height:36px;border:3px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .7s linear infinite;margin:0 auto 12px}
+@keyframes spin{to{transform:rotate(360deg)}}
+.stats{font-size:.82rem;color:var(--muted);margin-bottom:16px}
+.seccion{font-size:.75rem;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--muted);margin:22px 0 10px}
+.card{background:var(--surface);border:1.5px solid var(--border);border-radius:16px;padding:16px;display:flex;gap:14px;margin-bottom:12px;position:relative;transition:border-color .2s,transform .15s;overflow:hidden}
+.card:hover{transform:translateY(-2px)}
+.card.tiktok:hover{border-color:var(--tiktok)}
+.card.instagram:hover{border-color:var(--ig)}
+.card.twitter:hover{border-color:var(--tw)}
+.card.youtube:hover{border-color:var(--yt)}
+.card.facebook:hover{border-color:var(--fb)}
+.badge{position:absolute;top:12px;right:12px;font-size:.65rem;font-weight:700;padding:3px 9px;border-radius:50px;text-transform:uppercase;letter-spacing:.5px}
+.tiktok .badge{background:#fe2c5520;color:var(--tiktok)}
+.instagram .badge{background:#e1306c20;color:var(--ig)}
+.twitter .badge{background:#1d9bf020;color:var(--tw)}
+.youtube .badge{background:#ff000020;color:var(--yt)}
+.facebook .badge{background:#1877f220;color:var(--fb)}
+.avatar{width:58px;height:58px;border-radius:50%;object-fit:cover;background:var(--border);flex-shrink:0}
+.info{flex:1;min-width:0;padding-right:60px}
+.info h2{font-size:.92rem;font-weight:700;margin-bottom:2px}
+.handle{color:var(--muted);font-size:.78rem;margin-bottom:5px}
+.bio{color:#999;font-size:.78rem;line-height:1.45;margin-bottom:8px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.nums{display:flex;gap:12px;font-size:.75rem;color:var(--muted);margin-bottom:10px}
+.nums strong{color:var(--text)}
+.ver{display:inline-block;padding:5px 14px;border-radius:7px;font-size:.75rem;font-weight:700;text-decoration:none;color:#fff}
+.tiktok .ver{background:var(--tiktok)}
+.instagram .ver{background:var(--ig)}
+.twitter .ver{background:var(--tw)}
+.youtube .ver{background:var(--yt)}
+.facebook .ver{background:var(--fb)}
+.empty{text-align:center;color:var(--muted);padding:60px 0;font-size:.95rem;line-height:2}
+.progress-wrap{margin-bottom:20px;display:none}
+.progress-label{font-size:.78rem;color:var(--muted);margin-bottom:6px}
+.progress-bar{height:4px;background:var(--border);border-radius:50px;overflow:hidden}
+.progress-fill{height:100%;background:var(--accent);border-radius:50px;transition:width .3s;width:0%}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="header">
+    <div class="logo">🔎</div>
+    <h1>People Finder</h1>
+    <p class="sub">Escribe un nombre completo y busca en todas las redes</p>
+  </div>
+  <div class="search-box">
+    <input id="q" type="text" placeholder="Ej: María López García" autocomplete="off"/>
+    <button class="btn-buscar" onclick="buscar()">Buscar</button>
+  </div>
+  <div class="chips">
+    <div class="chip on" data-p="todos">Todos</div>
+    <div class="chip" data-p="tiktok">🎵 TikTok</div>
+    <div class="chip" data-p="instagram">📸 Instagram</div>
+    <div class="chip" data-p="twitter">🐦 Twitter/X</div>
+    <div class="chip" data-p="youtube">▶️ YouTube</div>
+    <div class="chip" data-p="facebook">👤 Facebook</div>
+  </div>
+  <div class="progress-wrap" id="progressWrap">
+    <div class="progress-label" id="progressLabel">Buscando...</div>
+    <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
+  </div>
+  <div class="loader" id="loader">
+    <div class="spinner"></div>
+    Buscando en todas las plataformas...
+  </div>
+  <div class="stats" id="stats"></div>
+  <div id="out"></div>
+</div>
+<script>
+const RAPIDAPI_KEY = "d0015cc34cmsh3e9a5588ed2b5c5p1df283jsn13162d2723cb";
+const YT_KEY = "";
+let todos = [];
+let filtroActual = "todos";
+const ICONOS = {tiktok:"🎵 TikTok",instagram:"📸 Instagram",twitter:"🐦 Twitter / X",youtube:"▶️ YouTube",facebook:"👤 Facebook"};
+
+async function fetchTikTok(nombre){
+  try{
+    const r=await fetch(`https://tiktok-scraper7.p.rapidapi.com/user/search?keyword=${enc(nombre)}&count=5&cursor=0`,
+      {headers:{"X-RapidAPI-Key":RAPIDAPI_KEY,"X-RapidAPI-Host":"tiktok-scraper7.p.rapidapi.com"}});
+    const d=await r.json();
+    return (d?.data?.user_list||[]).map(i=>{
+      const u=i.user_info||{};
+      return {plataforma:"tiktok",nombre:u.nickname||"",username:u.unique_id||"",bio:u.signature||"",seguidores:u.follower_count||0,avatar:u.avatar_thumb?.url_list?.[0]||"",url:`https://www.tiktok.com/@${u.unique_id||""}`,verificado:!!u.custom_verify};
+    });
+  }catch{return[]}
+}
+
+async function fetchInstagram(nombre){
+  try{
+    const r=await fetch(`https://instagram-scraper-api2.p.rapidapi.com/v1/search_users?search_query=${enc(nombre)}`,
+      {headers:{"X-RapidAPI-Key":RAPIDAPI_KEY,"X-RapidAPI-Host":"instagram-scraper-api2.p.rapidapi.com"}});
+    const d=await r.json();
+    return (d?.data?.users||[]).slice(0,5).map(i=>{
+      const u=i.user||{};
+      return {plataforma:"instagram",nombre:u.full_name||"",username:u.username||"",bio:u.biography||"",seguidores:u.follower_count||0,avatar:u.profile_pic_url||"",url:`https://www.instagram.com/${u.username||""}`,verificado:!!u.is_verified};
+    });
+  }catch{return[]}
+}
+
+async function fetchTwitter(nombre){
+  try{
+    const r=await fetch(`https://twitter-api45.p.rapidapi.com/search.php?query=${enc(nombre)}&search_type=People`,
+      {headers:{"X-RapidAPI-Key":RAPIDAPI_KEY,"X-RapidAPI-Host":"twitter-api45.p.rapidapi.com"}});
+    const d=await r.json();
+    return (d?.timeline||[]).filter(i=>i.type==="user").slice(0,5).map(u=>({
+      plataforma:"twitter",nombre:u.name||"",username:u.screen_name||"",bio:u.description||"",seguidores:u.followers_count||0,avatar:u.avatar||"",url:`https://twitter.com/${u.screen_name||""}`,verificado:!!u.blue_verified
+    }));
+  }catch{return[]}
+}
+
+async function fetchYoutube(nombre){
+  if(!YT_KEY)return[];
+  try{
+    const r=await fetch(`https://www.googleapis.com/youtube/v3/search?part=snippet&q=${enc(nombre)}&type=channel&maxResults=5&key=${YT_KEY}`);
+    const d=await r.json();
+    return (d?.items||[]).map(i=>{
+      const s=i.snippet||{};const cid=i.id?.channelId||"";
+      return {plataforma:"youtube",nombre:s.title||"",username:cid,bio:s.description||"",seguidores:0,avatar:s.thumbnails?.default?.url||"",url:`https://www.youtube.com/channel/${cid}`,verificado:false};
+    });
+  }catch{return[]}
+}
+
+async function fetchFacebook(nombre){
+  return [{plataforma:"facebook",nombre:"Buscar en Facebook",username:"",bio:`Toca para buscar "${nombre}" en Facebook`,seguidores:0,avatar:"",url:`https://www.facebook.com/search/people/?q=${enc(nombre)}`,verificado:false}];
+}
+
+async function buscar(){
+  const nombre=document.getElementById("q").value.trim();
+  if(!nombre)return;
+  todos=[];
+  document.getElementById("out").innerHTML="";
+  document.getElementById("stats").textContent="";
+  document.getElementById("loader").style.display="block";
+  const pw=document.getElementById("progressWrap");
+  const pf=document.getElementById("progressFill");
+  const pl=document.getElementById("progressLabel");
+  pw.style.display="block";pf.style.width="0%";
+  const plats=[
+    {fn:fetchTikTok,label:"TikTok"},
+    {fn:fetchInstagram,label:"Instagram"},
+    {fn:fetchTwitter,label:"Twitter/X"},
+    {fn:fetchYoutube,label:"YouTube"},
+    {fn:fetchFacebook,label:"Facebook"}
+  ];
+  for(let i=0;i<plats.length;i++){
+    pl.textContent=`Buscando en ${plats[i].label}...`;
+    pf.style.width=`${(i/plats.length)*100}%`;
+    const res=await plats[i].fn(nombre);
+    todos.push(...res);
+    renderResultados(filtroActual);
+  }
+  pf.style.width="100%";pl.textContent="¡Listo!";
+  setTimeout(()=>{pw.style.display="none";},1000);
+  document.getElementById("loader").style.display="none";
+  const p=new Set(todos.map(r=>r.plataforma)).size;
+  document.getElementById("stats").textContent=`${todos.length} perfiles encontrados en ${p} plataformas`;
+}
+
+function renderResultados(filtro){
+  const out=document.getElementById("out");
+  const filtrados=filtro==="todos"?todos:todos.filter(r=>r.plataforma===filtro);
+  if(filtrados.length===0){out.innerHTML=`<div class="empty">😶 Sin resultados aún...</div>`;return;}
+  const grupos={};
+  filtrados.forEach(r=>{if(!grupos[r.plataforma])grupos[r.plataforma]=[];grupos[r.plataforma].push(r);});
+  out.innerHTML="";
+  Object.entries(grupos).forEach(([plat,usuarios])=>{
+    const t=document.createElement("div");t.className="seccion";t.textContent=ICONOS[plat]||plat;out.appendChild(t);
+    usuarios.forEach(u=>{
+      const c=document.createElement("div");c.className=`card ${plat}`;
+      c.innerHTML=`<span class="badge">${plat}</span>
+        <img class="avatar" src="${u.avatar}" onerror="this.src='https://ui-avatars.com/api/?name=${enc(u.nombre||"?")}&background=252525&color=888&size=58'"/>
+        <div class="info">
+          <h2>${u.nombre||"Sin nombre"} ${u.verificado?"✅":""}</h2>
+          ${u.username?`<div class="handle">@${u.username}</div>`:""}
+          <div class="bio">${u.bio||"Sin bio"}</div>
+          ${u.seguidores?`<div class="nums"><span><strong>${fmt(u.seguidores)}</strong> seguidores</span></div>`:""}
+          <a class="ver" href="${u.url}" target="_blank">Ver perfil →</a>
+        </div>`;
+      out.appendChild(c);
+    });
+  });
+}
+
+function enc(s){return encodeURIComponent(s)}
+function fmt(n){if(n>=1e6)return(n/1e6).toFixed(1)+"M";if(n>=1e3)return(n/1e3).toFixed(1)+"K";return n}
+
+document.querySelectorAll(".chip").forEach(chip=>{
+  chip.addEventListener("click",()=>{
+    document.querySelectorAll(".chip").forEach(c=>c.classList.remove("on"));
+    chip.classList.add("on");
+    filtroActual=chip.dataset.p;
+    renderResultados(filtroActual);
+  });
+});
+
+document.getElementById("q").addEventListener("keydown",e=>{if(e.key==="Enter")buscar();});
+</script>
+</body>
+  </html>
